@@ -1,0 +1,1 @@
+IMAGE bg_sega bg/sega.png BEST ALL
