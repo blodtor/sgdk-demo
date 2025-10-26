@@ -11,5 +11,7 @@ extern const TileSet tileset_fg;
 extern const MapDefinition map_fg;
 extern const Palette palette_fg;
 extern const SpriteDefinition rapuncel;
+extern const TileSet sega_tileset;
+extern const MapDefinition sega_map;
 
 #endif // _RES_RESOURCES_H_

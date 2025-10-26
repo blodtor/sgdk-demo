@@ -33,11 +33,40 @@ int main(bool hardReset) {
 	// 2 и 3 параметр - x и y на тайловой сетке, где выводить текст
 	VDP_drawText("Hello BlodTor!!!", 13, 18);
 
-	// рисуем на заднем фоне картинку с надписью SEGA из файла sega.png
-	// 1 параметр - слой, на котором установлено изображение (BG_A, BG_B, WINDOW)
-	// 2 параметр - объект изображения, имя которого мы указали в resources.res
-	// 3 и 4 - координаты на тайловой сетке x, y в тайлах
-	VDP_drawImage(BG_B, &bg_sega, 0, 0);
+	// индекс последнего тайла в VRAM с которого можно добавить новые пользовательнские тайлы
+	u16 ind = TILE_USER_INDEX;
+
+	// устанавливаем 0 палитре цвета из палитры в файле sega.png
+	// 1 параметр - номер палитры (PAL0, PAL1, PAL2, PAL3)
+	// 2 параметр - палитра из объекта изображения, имя которого мы указали в resources.res
+	// 3 параметр - способ передачи (CPU, DMA, DMA_QUEUE, DMA_QUEUE_COPY)
+	PAL_setPalette(PAL0, bg_sega.palette->data, DMA);
+
+	// загружаем тайлы (tileset) в VRAM из тайлсета определенного в resources.res файла bg/sega.png
+	// 1 параметр - объект tileset, уникальные тайлы, определенные в resources.res
+	// 2 параметр - индекс тайла в VRAM с которого будут загружены тайлы из tileset
+	// 3 параметр - способ передачи данных (CPU, DMA, DMA_QUEUE, DMA_QUEUE_COPY)
+	VDP_loadTileSet(&sega_tileset, ind, DMA);
+
+
+	// создаем карту уровня на слое BG_B из карты тайлов определенный в resources.res (sega_map), используя макрос TILE_ATTR_FULL файла sega_map.tmx
+	// 1 параметр - tilemap - карта индексов тайлов из тайлсета что рание грузили
+	// 2 параметр - слой (BG_A или BG_B)
+	// 3 параметр - атрибуты тайлов для tilemap (через макрос TILE_ATTR_FULL)
+	//								1 параметр - палитра (PAL0, PAL1, PAL2, PAL3)
+	//                              2 параметр - включить приоритеты тайлов
+	//                              3 параметр - отоброзить тайлы по вертикали
+	//                              4 параметр - отоброзить тайлы по горизонтали
+	// 								5 параметр - индекс тайла в VRAM с которого будут наши тайлы
+	Map *segaMap = MAP_create(&sega_map, BG_B, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind));
+
+	// устанавливаем новый индекс последнего тайла в VRAM с которого можно добавить новые пользовательнские тайлы
+	ind += sega_tileset.numTile;
+
+	// Устанавливаем позицию на карте уровне игры в пикселах, какую часть уровня отображаем
+	// 1 параметр - карта уровеня игры
+	// 2 и 3 параметр - координаты x и y в пикселах на карте уровня
+	MAP_scrollTo(segaMap, 0, 0);
 
 	// куда смотрит Рапунцель. FALSE - вправо, TRUE - влево
 	u8 hFlipRapuncel = FALSE;
@@ -62,7 +91,7 @@ int main(bool hardReset) {
 		SPR_setHFlip(rapuncelSprite, hFlipRapuncel);
 
 		// меняем позицию спрайта Рапунцель X = xRapuncel, Y = 20
-		SPR_setPosition(rapuncelSprite, xRapuncel, 20);
+		SPR_setPosition(rapuncelSprite, xRapuncel, 80);
 
 		if (joy1 & BUTTON_RIGHT) {
 			// нажата кнопка 'вправо'
@@ -139,9 +168,6 @@ int main(bool hardReset) {
 	// 2 параметр - палитра из объекта изображения, имя которого мы указали в resources.res
 	// 3 параметр - способ передачи (CPU, DMA, DMA_QUEUE, DMA_QUEUE_COPY)
 	PAL_setPalette(PAL1, bg_sega.palette->data, DMA);
-
-	// индекс последнего тайла в VRAM с которого можно добавить новые пользовательнские тайлы
-	u16 ind = TILE_USER_INDEX;
 
 	// рисуем на заднем фоне картинку с заднем фоном SEGA из файла sega.png
 	// 1 параметр - слой, на котором будет отресовано изображение (BG_A, BG_B, WINDOW)
