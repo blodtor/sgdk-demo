@@ -5,28 +5,27 @@
 
 // точка входа в программу (игру)
 int main(bool hardReset) {
-    // инициализируем спрайтовый движок (выделяем место в VRAM под спрайты)
-    SPR_init();
+	// инициализируем спрайтовый движок (выделяем место в VRAM под спрайты)
+	SPR_init();
 
 	// устанавливаем первой палитре цвета из палитры в файле rapuncel.png
 	// 1 параметр - номер палитры (PAL0, PAL1, PAL2, PAL3)
 	// 2 параметр - палитра из объекта изображения, имя которого мы указали в resources.res
 	// 3 параметр - способ передачи (CPU, DMA, DMA_QUEUE, DMA_QUEUE_COPY)
-	PAL_setPalette(PAL1, rapuncel.palette->data, DMA);
+	PAL_setPalette(PAL3, rapuncel.palette->data, DMA);
 
-    // добавляем спрайт Рапунцель на экран
+	// добавляем спрайт Рапунцель на экран
 	// 1 параметр ссылка на ресурс из resources.res
 	// 2 параметр координата x
 	// 3 параметр координата y
 	// 4 параметр атрибуты (TILE_ATTR)
 	// возвращает указатель на struct Sprite который используем далее в коде
-    Sprite*  rapuncelSprite = SPR_addSprite(&rapuncel, 80, 80,
-                                    TILE_ATTR(PAL1       // палитра
-                                                , 0      // приоритет спрайта (спрайт с меньшим числом, будет перекрывать спрайт с большим)
-                                                , FALSE  // перевернуть по вертикали
-                                                , FALSE  // перевернуть по горизонтали
-                                              )
-                                );
+	Sprite *rapuncelSprite = SPR_addSprite(&rapuncel, 80, 80, TILE_ATTR(
+			PAL3 // палитра
+			,0// приоритет спрайта (спрайт с меньшим числом, будет перекрывать спрайт с большим)
+			,FALSE// перевернуть по вертикали
+			,FALSE// перевернуть по горизонтали
+	));
 
 	// выводим на экран "Hello BlodTor!!!"
 	// 1 параметр - строка которую хотим вывести на экран
@@ -47,7 +46,6 @@ int main(bool hardReset) {
 	// 2 параметр - индекс тайла в VRAM с которого будут загружены тайлы из tileset
 	// 3 параметр - способ передачи данных (CPU, DMA, DMA_QUEUE, DMA_QUEUE_COPY)
 	VDP_loadTileSet(&sega_tileset, ind, DMA);
-
 
 	// создаем карту уровня на слое BG_B из карты тайлов определенный в resources.res (sega_map), используя макрос TILE_ATTR_FULL файла sega_map.tmx
 	// 1 параметр - tilemap - карта индексов тайлов из тайлсета что рание грузили
@@ -82,6 +80,16 @@ int main(bool hardReset) {
 	// когда достигнет 128 рапунцель начнет чисать волосы
 	u8 time = 0;
 
+	// проиграть музыку из Sonic - sound/sonic.vgm
+	// 1 параметр имя рессурса из файла resources.res
+	XGM_startPlay(sonic_vgm);
+
+	// Объявляем новый PCM семпл, его id будет 64 на основе файла sound/cherry.wav
+	// 1 параметр - id сэмпла (значения от 1 до 63 используются для музыки, от 64 до 255 занимают звуки)
+	// 2 параметр - sample  имя ресурса, который описали в resources.res - cherry_sfx
+	// 3 параметр - len размер сэмпла в бфйтах (выделяемое место под сэмпл)
+	XGM_setPCM(64, cherry_sfx, sizeof(cherry_sfx));
+
 	do {
 		// запоминаем в joy1 состояние кнопок первого контроллера (что нажато что нет)
 		joy1 = JOY_readJoypad(JOY_1);
@@ -90,8 +98,21 @@ int main(bool hardReset) {
 		// если hFlipRapuncel == TRUE отобразить спрайт Рапунцель по горизониали (будет смотреть влево)
 		SPR_setHFlip(rapuncelSprite, hFlipRapuncel);
 
-		// меняем позицию спрайта Рапунцель X = xRapuncel, Y = 20
+		// меняем позицию спрайта Рапунцель X = xRapuncel, Y = 80
 		SPR_setPosition(rapuncelSprite, xRapuncel, 80);
+
+		if (joy1 & BUTTON_C) {
+			// нажата кнопка C на контроллере
+
+			// проиграть звуковой эффект sound/cherry.wav
+			// 1 параметр - id сэмпла который определили при вызове функции XGM_setPCM
+			// 2 параметр - priority приоритет (значение от 0 до 15, где 0 меньший приоритет, а 15 — больший.
+			//              Если звук уже проигрывается, то приоритет определяет, должен ли новый звук заменить старый
+			// 3 параметр - channel задает отдельный канал, на котором может проигрываться 1 звук
+			//              Канал SOUND_PCM_CH1 используется музыкой.
+			//              Доступны каналы SOUND_PCM_CH1, SOUND_PCM_CH2, SOUND_PCM_CH3, SOUND_PCM_CH4
+			XGM_startPlayPCM(64, 0, SOUND_PCM_CH2);
+		}
 
 		if (joy1 & BUTTON_RIGHT) {
 			// нажата кнопка 'вправо'
@@ -148,8 +169,8 @@ int main(bool hardReset) {
 			}
 		}
 
-        // Обновляет и отображает спрайты на экране
-        SPR_update();
+		// Обновляет и отображает спрайты на экране
+		SPR_update();
 
 		// ждем отрисовки кадра
 		SYS_doVBlankProcess();
@@ -158,6 +179,9 @@ int main(bool hardReset) {
 	} while (!(joy1 & BUTTON_A));
 
 	// ******************************* 1 **************************************************************
+	// проиграть музыку из comix zone - sound/comixzone.vgm
+	// параметр имя рессурса из файла resources.res
+	XGM_startPlay(comixzone_vgm);
 
 	// устанавливаем цвет текста красным
 	// в нулевой палитре 15 цвет будет красного цета
@@ -181,8 +205,7 @@ int main(bool hardReset) {
 	// 4 и 5 параметр - координаты на тайловой сетке x, y
 	// 6 параметр - загружать ли из переданного рессурса в палитру цвета
 	// 7 параметр - способ передачи данных TRUE - DMA, FALSE - CPU
-	VDP_drawImageEx(BG_B, &bg_sega,
-			TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind), 0, 0, FALSE, TRUE);
+	VDP_drawImageEx(BG_B, &bg_sega, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind), 0, 0, FALSE, TRUE);
 
 	do {
 		// ждем отрисовки кадра
@@ -211,8 +234,7 @@ int main(bool hardReset) {
 	// 4 и 5 параметр - координаты на тайловой сетке x, y
 	// 6 параметр - загружать ли из переданного рессурса в палитру цвета
 	// 7 параметр - способ передачи данных TRUE - DMA, FALSE - CPU
-	VDP_drawImageEx(BG_B, &bg_B, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind),
-			0, 0, FALSE, TRUE);
+	VDP_drawImageEx(BG_B, &bg_B, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind), 0, 0, FALSE, TRUE);
 
 	// устанавливаем новый индекс последнего тайла в VRAM с которого можно добавить новые пользовательнские тайлы
 	ind += bg_B.tileset->numTile;
@@ -300,8 +322,7 @@ int main(bool hardReset) {
 	//                              3 параметр - отоброзить тайлы по вертикали
 	//                              4 параметр - отоброзить тайлы по горизонтали
 	// 								5 параметр - индекс тайла в VRAM с которого будут наши тайлы
-	Map *fgMap = MAP_create(&map_fg, BG_A,
-			TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind));
+	Map *fgMap = MAP_create(&map_fg, BG_A, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind));
 
 	// устанавливаем новый индекс последнего тайла в VRAM с которого можно добавить новые пользовательнские тайлы
 	ind += tileset_fg.numTile;
@@ -369,8 +390,7 @@ int main(bool hardReset) {
 	// 4 и 5 параметр - координаты на тайловой сетке x, y
 	// 6 параметр - загружать ли из переданного рессурса в палитру цвета
 	// 7 параметр - способ передачи данных TRUE - DMA, FALSE - CPU
-	VDP_drawImageEx(WINDOW, &bg_W,
-			TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind), 0, 0, FALSE, TRUE);
+	VDP_drawImageEx(WINDOW, &bg_W, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, ind), 0, 0, FALSE, TRUE);
 
 	// Отображает Окно (слой WINDOW на слое BG_A) с верхнего края до базовой точки pos Окна.
 	// 1 параметр - если true, Отображает Окна с базовой точки pos Окна до нижнего края.
