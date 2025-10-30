@@ -8,3 +8,7 @@ https://youtu.be/zqrcwO7h3PQ
 https://youtu.be/MUBkMyymdpc
 помечен тегом v2
 
+Код к видео:
+'Создание игры для SEGA Mega Drive / Genesis - музыка и приоритеты тайлов плоскостей графики'
+https://youtu.be/whFuzdgbe1E
+помечен тегом v3
